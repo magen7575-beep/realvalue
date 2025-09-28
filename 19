@@ -1,0 +1,41 @@
+import { prisma } from "@/lib/prisma";
+import { NextApiRequest, NextApiResponse } from "next";
+import csv from "csv-parser";
+import formidable from "formidable";
+import fs from "fs";
+
+export const config = {
+  api: { bodyParser: false }
+};
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") return res.status(405).end();
+
+  const form = formidable();
+
+  form.parse(req, async (err, fields, files) => {
+    if (err) return res.status(500).json({ error: "Upload failed" });
+    const file = files.file?.[0];
+    if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+    const rows: any[] = [];
+    fs.createReadStream(file.filepath)
+      .pipe(csv())
+      .on("data", (data) => rows.push(data))
+      .on("end", async () => {
+        for (const row of rows) {
+          await prisma.transaction.create({
+            data: {
+              deal_date: new Date(row.deal_date),
+              city: row.city,
+              neighborhood: row.neighborhood,
+              sqm_built: Number(row.sqm_built),
+              price_ils: Number(row.price_ils),
+              price_per_sqm: Number(row.price_per_sqm)
+            }
+          });
+        }
+        res.json({ inserted: rows.length });
+      });
+  });
+}
