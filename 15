@@ -1,0 +1,56 @@
+import { useState } from "react";
+
+export default function AnalyzePage() {
+  const [address, setAddress] = useState("");
+  const [size, setSize] = useState<number | "">("");
+  const [price, setPrice] = useState<number | "">("");
+  const [result, setResult] = useState<any>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address, size, price })
+    });
+    setResult(await res.json());
+  }
+
+  return (
+    <main className="p-6 max-w-xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Analyze Property</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          placeholder="Address"
+          className="border rounded p-2 w-full"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+        />
+        <input
+          type="number"
+          placeholder="Size (sqm)"
+          className="border rounded p-2 w-full"
+          value={size}
+          onChange={(e) => setSize(Number(e.target.value))}
+        />
+        <input
+          type="number"
+          placeholder="Price (₪)"
+          className="border rounded p-2 w-full"
+          value={price}
+          onChange={(e) => setPrice(Number(e.target.value))}
+        />
+        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">
+          Analyze
+        </button>
+      </form>
+
+      {result && (
+        <div className="mt-6 border rounded p-4">
+          <h2 className="font-semibold">Result</h2>
+          <pre>{JSON.stringify(result, null, 2)}</pre>
+        </div>
+      )}
+    </main>
+  );
+}
